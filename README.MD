@@ -1,4 +1,4 @@
-<h1 align="center">tп-inline-calendar</h1>
+<h1 align="center">tg-inline-calendar</h1>
 
 <div align="center">
 
