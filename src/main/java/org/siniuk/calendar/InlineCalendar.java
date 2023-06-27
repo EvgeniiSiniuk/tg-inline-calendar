@@ -12,6 +12,9 @@ import java.util.List;
 
 public class InlineCalendar {
 
+    public static final String CONTROL_ALIAS = "_control_al";
+    public static final String DATE_ALIAS = "_date_al";
+
     protected static List<InlineKeyboardButton> createYearAndMonthRow(LocalDate date, Locale locale) {
         List<InlineKeyboardButton> yearAndMonthRow = new ArrayList<>();
         String buttonName;
@@ -24,18 +27,22 @@ public class InlineCalendar {
         String nextMonthCallbackData;
 
         if (date.getMonthValue() == 1) {
-            prevMonthCallbackData = date.getYear() - 1 + "-12-01";
+            int prevYear = date.getYear() - 1;
+            prevMonthCallbackData = prevYear + "-12-01";
             nextMonthCallbackData = date.getYear() + "-02-01";
         } else if (date.getMonthValue() == 12) {
+            int nextYear = date.getYear() + 1;
             prevMonthCallbackData = date.getYear() + "-11-01";
-            nextMonthCallbackData = date.getYear() + 1 + "01-01";
+            nextMonthCallbackData = nextYear + "01-01";
         } else {
-            prevMonthCallbackData = date.getYear() + "-" + date.getMonthValue() + 1 + "-01";
-            nextMonthCallbackData = date.getYear() + "-" + date.getMonthValue() + 1 + "-01";
+            int nextMonth = date.getMonthValue() + 1;
+            int prevMonth = date.getMonthValue() - 1;
+            prevMonthCallbackData = date.getYear() + "-" + toTwoDigitNumber(prevMonth) + "-01";
+            nextMonthCallbackData = date.getYear() + "-" + toTwoDigitNumber(nextMonth) + "-01";
         }
-        yearAndMonthRow.add(ButtonFactory.createButton("<<<", prevMonthCallbackData));
-        yearAndMonthRow.add(ButtonFactory.createButton(buttonName, "_"));
-        yearAndMonthRow.add(ButtonFactory.createButton(">>>", nextMonthCallbackData));
+        yearAndMonthRow.add(ButtonFactory.createButton("<<<", "month_" + prevMonthCallbackData + CONTROL_ALIAS));
+        yearAndMonthRow.add(ButtonFactory.createButton(buttonName, "year_" + date.getYear() + "-01-01" + CONTROL_ALIAS));
+        yearAndMonthRow.add(ButtonFactory.createButton(">>>", "month_" + nextMonthCallbackData + CONTROL_ALIAS));
         return yearAndMonthRow;
     }
 
@@ -51,37 +58,33 @@ public class InlineCalendar {
         int nextYear = date.getYear() + 1;
         int prevYear = date.getYear() - 1;
 
-        yearRow.add(ButtonFactory.createButton("<<<", "year_" + prevYear + callbackDataStartOfYear));
+        yearRow.add(ButtonFactory.createButton("<<<", "year_" + prevYear + callbackDataStartOfYear + CONTROL_ALIAS));
         yearRow.add(ButtonFactory.createButton(String.valueOf(date.getYear()), "_"));
-        yearRow.add(ButtonFactory.createButton(">>>", "year_" + nextYear + callbackDataStartOfYear));
+        yearRow.add(ButtonFactory.createButton(">>>", "year_" + nextYear + callbackDataStartOfYear + CONTROL_ALIAS));
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 1; i < 5; i++) {
             String callbackDataStartOfMonth = "-0" + i + "-01";
             if (locale.equals(Locale.RU)) {
-                firstRow.add(ButtonFactory.createButton(monthAbbreviations[i].getRussianValue(), "month_" + date.getYear() + callbackDataStartOfMonth));
+                firstRow.add(ButtonFactory.createButton(monthAbbreviations[i - 1].getRussianValue(), "month_" + date.getYear() + callbackDataStartOfMonth + CONTROL_ALIAS));
             } else {
-                firstRow.add(ButtonFactory.createButton(monthAbbreviations[i].getEnglishValue(), "month_" + date.getYear() + callbackDataStartOfMonth));
+                firstRow.add(ButtonFactory.createButton(monthAbbreviations[i - 1].getEnglishValue(), "month_" + date.getYear() + callbackDataStartOfMonth + CONTROL_ALIAS));
             }
         }
-        for (int i = 4; i < 8; i++) {
+        for (int i = 5; i < 9; i++) {
             String callbackDataStartOfMonth = "-0" + i + "-01";
             if (locale.equals(Locale.RU)) {
-                secondRow.add(ButtonFactory.createButton(monthAbbreviations[i].getRussianValue(), "month_" + date.getYear() + callbackDataStartOfMonth));
+                secondRow.add(ButtonFactory.createButton(monthAbbreviations[i - 1].getRussianValue(), "month_" + date.getYear() + callbackDataStartOfMonth + CONTROL_ALIAS));
             } else {
-                secondRow.add(ButtonFactory.createButton(monthAbbreviations[i].getEnglishValue(), "month_" + date.getYear() + callbackDataStartOfMonth));
+                secondRow.add(ButtonFactory.createButton(monthAbbreviations[i - 1].getEnglishValue(), "month_" + date.getYear() + callbackDataStartOfMonth + CONTROL_ALIAS));
             }
         }
-        for (int i = 8; i < 12; i++) {
+        for (int i = 9; i < 13; i++) {
             String callbackDataStartOfMonth;
-            if (i < 10) {
-                callbackDataStartOfMonth = "-0" + i + "-01";
-            } else {
-                callbackDataStartOfMonth = "-" + i + "-01";
-            }
+            callbackDataStartOfMonth = "-" + toTwoDigitNumber(i) + "-01";
             if (locale.equals(Locale.RU)) {
-                thirdRow.add(ButtonFactory.createButton(monthAbbreviations[i].getRussianValue(), "month_" + date.getYear() + callbackDataStartOfMonth));
+                thirdRow.add(ButtonFactory.createButton(monthAbbreviations[i - 1].getRussianValue(), "month_" + date.getYear() + callbackDataStartOfMonth + CONTROL_ALIAS));
             } else {
-                thirdRow.add(ButtonFactory.createButton(monthAbbreviations[i].getEnglishValue(), "month_" + date.getYear() + callbackDataStartOfMonth));
+                thirdRow.add(ButtonFactory.createButton(monthAbbreviations[i - 1].getEnglishValue(), "month_" + date.getYear() + callbackDataStartOfMonth + CONTROL_ALIAS));
             }
         }
         monthKeyboard.add(yearRow);
@@ -109,30 +112,30 @@ public class InlineCalendar {
 
         int howMuchWeeks = howMuchWeeksInMonth(monthDate);
 
-        int firsDayOfMonth = date.getDayOfWeek().getValue() - 1;
+        int firsDayOfMonth = monthDate.getDayOfWeek().getValue() - 1;
         int lastDayOfMonth = lastDayMonth.getDayOfWeek().getValue() - 1;
         List<List<InlineKeyboardButton>> monthKeyboard = new ArrayList<>();
         int dayOfMonth = 1;
         for (int weekNumber = 0; weekNumber < howMuchWeeks; weekNumber++) {
             List<InlineKeyboardButton> weekRow = new ArrayList<>();
-            for(int dayNumber = 0; dayNumber < 7; dayNumber++) {
-                String callbackData = date.getYear() + "-" + date.getMonthValue() + "-";
+            for (int dayNumber = 0; dayNumber < 7; dayNumber++) {
+                String callbackData = date.getYear() + "-" + toTwoDigitNumber(date.getMonthValue()) + "-";
                 if (weekNumber == 0) {
-                    if(dayNumber < firsDayOfMonth) {
-                        weekRow.add(ButtonFactory.createButton("", ""));
+                    if (dayNumber < firsDayOfMonth) {
+                        weekRow.add(ButtonFactory.createButton(" ", "_"));
                     } else {
-                        weekRow.add(ButtonFactory.createButton(String.valueOf(dayOfMonth), "day_" + callbackData + dayOfMonth));
+                        weekRow.add(ButtonFactory.createButton(String.valueOf(dayOfMonth), "day_" + callbackData + toTwoDigitNumber(dayOfMonth) + DATE_ALIAS));
                         dayOfMonth++;
                     }
                 } else if (weekNumber == howMuchWeeks - 1) {
                     if (dayNumber > lastDayOfMonth) {
-                        weekRow.add(ButtonFactory.createButton("", ""));
+                        weekRow.add(ButtonFactory.createButton(" ", "_"));
                     } else {
-                        weekRow.add(ButtonFactory.createButton(String.valueOf(dayOfMonth), "day_" + callbackData + dayOfMonth));
+                        weekRow.add(ButtonFactory.createButton(String.valueOf(dayOfMonth), "day_" + callbackData + toTwoDigitNumber(dayOfMonth) + DATE_ALIAS));
                         dayOfMonth++;
                     }
                 } else {
-                    weekRow.add(ButtonFactory.createButton(String.valueOf(dayOfMonth), "day_" + callbackData + dayOfMonth));
+                    weekRow.add(ButtonFactory.createButton(String.valueOf(dayOfMonth), "day_" + callbackData + toTwoDigitNumber(dayOfMonth) + DATE_ALIAS));
                     dayOfMonth++;
                 }
             }
@@ -144,6 +147,10 @@ public class InlineCalendar {
     private static int howMuchWeeksInMonth(LocalDate date) {
         int dayOfWeek = date.getDayOfWeek().getValue();
         int tmp = date.lengthOfMonth() - 8 + dayOfWeek;
-        return (int) (Math.ceil((double) tmp/7) + 1);
+        return (int) (Math.ceil((double) tmp / 7) + 1);
+    }
+
+    private static String toTwoDigitNumber(int number) {
+        return String.format("%02d", number);
     }
 }

@@ -5,6 +5,7 @@ import org.siniuk.calendar.utils.DateChoiceText;
 import org.siniuk.calendar.utils.Locale;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -20,16 +21,15 @@ public class CalendarController {
 
     private final Locale locale;
     private final TelegramLongPollingBot bot;
-    private final int messageId;
-    private final String chatId;
 
-    public void startCalendar() {
+    public void startCalendar(String chatId) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> keyboardRowList = generateMonthCalendar(LocalDate.now());
 
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.enableMarkdown(true);
+        message.setText("???");
         keyboardMarkup.setKeyboard(keyboardRowList);
         message.setReplyMarkup(keyboardMarkup);
 
@@ -40,36 +40,61 @@ public class CalendarController {
         }
     }
 
-    public void control(CallbackQuery callbackQuery) {
+    public String chosenDate(CallbackQuery callbackQuery) {
         // Handle callback data
         String callbackData = callbackQuery.getData();
 
-        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
-        List<List<InlineKeyboardButton>> keyboardRowList = new ArrayList<>();
-        clearPreviousMarkup();
+        String chatId = String.valueOf(callbackQuery.getMessage().getChatId());
+        int messageId = callbackQuery.getMessage().getMessageId();
+
+        clearPreviousMarkup(chatId, messageId);
+        deletePreviousMessage(chatId, messageId);
 
         // Create a message object
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
-        message.enableMarkdown(true);
 
-        if (callbackData.contains("year_")) {
-            LocalDate date = LocalDate.parse(callbackData.replaceAll("year_", ""));
-            keyboardRowList.addAll(generateYearCalendar(date));
-        } else if (callbackData.contains("month_")){
-            LocalDate date = LocalDate.parse(callbackData.replaceAll("month_", ""));
-            keyboardRowList.addAll(generateMonthCalendar(date));
+        String date = callbackData.replaceAll("day_", "").replaceAll(InlineCalendar.DATE_ALIAS, "");
+        if (locale.equals(Locale.RU)) {
+            message.setText(DateChoiceText.RU.getText() + date);
         } else {
-            if (locale.equals(Locale.RU)) {
-                message.setText(DateChoiceText.RU.getText() + callbackData.replaceAll("day_", ""));
-            } else {
-                message.setText(DateChoiceText.EN.getText() + callbackData.replaceAll("day_", ""));
-            }
+            message.setText(DateChoiceText.EN.getText() + date);
         }
-        keyboardMarkup.setKeyboard(keyboardRowList);
-        message.setReplyMarkup(keyboardMarkup);
         try {
             bot.execute(message);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+        return date;
+    }
+
+    public void control(CallbackQuery callbackQuery) {
+        // Handle callback data
+        String callbackData = callbackQuery.getData();
+
+        String chatId = String.valueOf(callbackQuery.getMessage().getChatId());
+        int messageId = callbackQuery.getMessage().getMessageId();
+
+        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> keyboardRowList = new ArrayList<>();
+        clearPreviousMarkup(chatId, messageId);
+
+        if (callbackData.contains("year_")) {
+            LocalDate date = LocalDate.parse(callbackData.replaceAll("year_", "").replaceAll(InlineCalendar.CONTROL_ALIAS, ""));
+            keyboardRowList.addAll(generateYearCalendar(date));
+        } else if (callbackData.contains("month_")) {
+            LocalDate date = LocalDate.parse(callbackData.replaceAll("month_", "").replaceAll(InlineCalendar.CONTROL_ALIAS, ""));
+            keyboardRowList.addAll(generateMonthCalendar(date));
+        }
+        // Create a message object
+        keyboardMarkup.setKeyboard(keyboardRowList);
+        EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
+        editMessageReplyMarkup.setChatId(chatId);
+        editMessageReplyMarkup.setMessageId(messageId);
+        editMessageReplyMarkup.setReplyMarkup(keyboardMarkup);
+
+        try {
+            bot.execute(editMessageReplyMarkup);
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
@@ -87,7 +112,7 @@ public class CalendarController {
         return InlineCalendar.createMonthKeyboard(date, locale);
     }
 
-    private void clearPreviousMarkup() {
+    private void clearPreviousMarkup(String chatId, int messageId) {
         EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
         editMessageReplyMarkup.setChatId(chatId);
         editMessageReplyMarkup.setMessageId(messageId);
@@ -97,6 +122,17 @@ public class CalendarController {
             bot.execute(editMessageReplyMarkup);
         } catch (TelegramApiException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void deletePreviousMessage(String chatId, int messageId) {
+        DeleteMessage deleteMessage = new DeleteMessage();
+        deleteMessage.setChatId(chatId);
+        deleteMessage.setMessageId(messageId);
+        try {
+            bot.execute(deleteMessage);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
         }
     }
 }
