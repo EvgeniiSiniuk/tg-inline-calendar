@@ -15,6 +15,48 @@ public class InlineCalendar {
     public static final String CONTROL_ALIAS = "_control_al";
     public static final String DATE_ALIAS = "_date_al";
 
+    protected static List<InlineKeyboardButton> createDecadeRow(LocalDate date) {
+        List<InlineKeyboardButton> yearAndMonthRow = new ArrayList<>();
+        String buttonName;
+        int nextDecade = date.getYear() + 8;
+        int prevDecade = date.getYear() - 8;
+        buttonName = prevDecade + "-" + date.getYear();
+
+        String prevDecadeCallbackData = prevDecade + "-01-01";
+        String nextDecadeCallbackData = nextDecade + "-01-01";
+
+        yearAndMonthRow.add(ButtonFactory.createButton("<<<", "decade_" + prevDecadeCallbackData + CONTROL_ALIAS));
+        yearAndMonthRow.add(ButtonFactory.createButton(buttonName, "_"));
+        yearAndMonthRow.add(ButtonFactory.createButton(">>>", "decade_" + nextDecadeCallbackData + CONTROL_ALIAS));
+        return yearAndMonthRow;
+    }
+
+    protected static List<List<InlineKeyboardButton>> createYearsKeyboard(LocalDate date) {
+        List<List<InlineKeyboardButton>> yearsKeyboard = new ArrayList<>();
+        List<InlineKeyboardButton> firstRow = new ArrayList<>();
+        List<InlineKeyboardButton> secondRow = new ArrayList<>();
+        List<InlineKeyboardButton> thirdRow = new ArrayList<>();
+
+        String callbackDataStartOfYear = "-01-01";
+
+        for (int i = 8; i >= 6; i--) {
+            int year = date.getYear() - i;
+            firstRow.add(ButtonFactory.createButton(String.valueOf(year), "year_" + year + callbackDataStartOfYear + CONTROL_ALIAS));
+        }
+        for (int i = 5; i >= 3; i--) {
+            int year = date.getYear() - i;
+            secondRow.add(ButtonFactory.createButton(String.valueOf(year), "year_" + year + callbackDataStartOfYear + CONTROL_ALIAS));
+        }
+        for (int i = 2; i >= 0; i--) {
+            int year = date.getYear() - i;
+            thirdRow.add(ButtonFactory.createButton(String.valueOf(year), "year_" + year + callbackDataStartOfYear + CONTROL_ALIAS));
+        }
+        yearsKeyboard.add(firstRow);
+        yearsKeyboard.add(secondRow);
+        yearsKeyboard.add(thirdRow);
+        return yearsKeyboard;
+    }
+
     protected static List<InlineKeyboardButton> createYearAndMonthRow(LocalDate date, Locale locale) {
         List<InlineKeyboardButton> yearAndMonthRow = new ArrayList<>();
         String buttonName;
@@ -59,7 +101,7 @@ public class InlineCalendar {
         int prevYear = date.getYear() - 1;
 
         yearRow.add(ButtonFactory.createButton("<<<", "year_" + prevYear + callbackDataStartOfYear + CONTROL_ALIAS));
-        yearRow.add(ButtonFactory.createButton(String.valueOf(date.getYear()), "_"));
+        yearRow.add(ButtonFactory.createButton(String.valueOf(date.getYear()), "decade_" + date.getYear() + callbackDataStartOfYear + CONTROL_ALIAS));
         yearRow.add(ButtonFactory.createButton(">>>", "year_" + nextYear + callbackDataStartOfYear + CONTROL_ALIAS));
 
         for (int i = 1; i < 5; i++) {
