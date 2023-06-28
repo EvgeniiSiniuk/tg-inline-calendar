@@ -9,7 +9,7 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 public class Bot extends TelegramLongPollingBot {
-    CalendarController calendarController = new CalendarController(Locale.RU, this);
+    CalendarController calendarController = new CalendarController(Locale.EN, this);
 
     @Override
     public void onUpdateReceived(Update update) {
@@ -21,7 +21,7 @@ public class Bot extends TelegramLongPollingBot {
             if (callbackQuery.getData().contains(InlineCalendar.CONTROL_ALIAS)) {
                 calendarController.control(callbackQuery);
             } else if ((callbackQuery.getData().contains(InlineCalendar.DATE_ALIAS))) {
-                String result = calendarController.chosenDate(callbackQuery);
+                String result = calendarController.resolve(callbackQuery);
                 System.out.println("User date is: " + result);
             }
         } else if ((update.hasMessage())) {
@@ -29,7 +29,7 @@ public class Bot extends TelegramLongPollingBot {
             String chatId = inMess.getChatId().toString();
             String inMessText = inMess.getText();
             if (inMessText.equals("/start")) {
-                calendarController.startCalendar(chatId);
+                calendarController.startCalendar(chatId, "Chose ur bitrh date");
             }
         }
     }

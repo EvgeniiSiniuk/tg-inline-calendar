@@ -22,14 +22,14 @@ public class CalendarController {
     private final Locale locale;
     private final TelegramLongPollingBot bot;
 
-    public void startCalendar(String chatId) {
+    public void startCalendar(String chatId, String calendarMessage) {
         InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> keyboardRowList = generateMonthCalendar(LocalDate.now());
 
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.enableMarkdown(true);
-        message.setText("???");
+        message.setText(calendarMessage);
         keyboardMarkup.setKeyboard(keyboardRowList);
         message.setReplyMarkup(keyboardMarkup);
 
@@ -40,7 +40,7 @@ public class CalendarController {
         }
     }
 
-    public String chosenDate(CallbackQuery callbackQuery) {
+    public String resolve(CallbackQuery callbackQuery) {
         // Handle callback data
         String callbackData = callbackQuery.getData();
 
@@ -85,6 +85,9 @@ public class CalendarController {
         } else if (callbackData.contains("month_")) {
             LocalDate date = LocalDate.parse(callbackData.replaceAll("month_", "").replaceAll(InlineCalendar.CONTROL_ALIAS, ""));
             keyboardRowList.addAll(generateMonthCalendar(date));
+        } else if (callbackData.contains("decade_")) {
+            LocalDate date = LocalDate.parse(callbackData.replaceAll("decade_", "").replaceAll(InlineCalendar.CONTROL_ALIAS, ""));
+            keyboardRowList.addAll(generateDecadeCalendar(date));
         }
         // Create a message object
         keyboardMarkup.setKeyboard(keyboardRowList);
@@ -105,6 +108,13 @@ public class CalendarController {
         calendar.add(InlineCalendar.createYearAndMonthRow(date, locale));
         calendar.add(InlineCalendar.createDayOfWeekRow(locale));
         calendar.addAll(InlineCalendar.createDayOfMonthKeyboard(date));
+        return calendar;
+    }
+
+    private List<List<InlineKeyboardButton>> generateDecadeCalendar(LocalDate date) {
+        List<List<InlineKeyboardButton>> calendar = new ArrayList<>();
+        calendar.add(InlineCalendar.createDecadeRow(date));
+        calendar.addAll(InlineCalendar.createYearsKeyboard(date));
         return calendar;
     }
 
